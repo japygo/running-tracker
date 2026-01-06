@@ -37,6 +37,7 @@ class HomeViewModel @Inject constructor(
                         distance = state.distance,
                         duration = state.duration,
                         pathPoints = state.pathPoints,
+                        startTime = state.startTime,
                     )
                 }
             }
@@ -84,9 +85,23 @@ class HomeViewModel @Inject constructor(
 
     private fun stop() {
         viewModelScope.launch {
-            saveRunningSessionUseCase(RunningSession())
+            val currentState = uiState.value
+
             stopTrackingUseCase()
+
+            if (currentState.distance > 0 && currentState.startTime > 0) {
+                saveRunningSessionUseCase(
+                    RunningSession(
+                        startTime = currentState.startTime,
+                        endTime = System.currentTimeMillis(),
+                        distance = currentState.distance,
+                        duration = System.currentTimeMillis() - currentState.startTime,
+                        pathPoints = currentState.pathPoints,
+                    ),
+                )
+            }
         }
+
         _uiState.update {
             uiState.value.copy(
                 isStarted = false,

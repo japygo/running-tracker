@@ -11,4 +11,5 @@ data class RunningSessionEntity(
     @ColumnInfo(name = "end_time") val endTime: Long = 0,
     @ColumnInfo(name = "distance") val distance: Double = 0.0,
     @ColumnInfo(name = "duration") val duration: Long = 0,
+    @ColumnInfo(name = "path_points") val pathPointsJson: String = "",
 )

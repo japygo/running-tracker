@@ -6,4 +6,5 @@ data class HomeUiState(
     val distance: Double = 0.0,
     val duration: Long = 0L,
     val pathPoints: List<Pair<Double, Double>> = emptyList(),
+    val startTime: Long = 0,
 )
