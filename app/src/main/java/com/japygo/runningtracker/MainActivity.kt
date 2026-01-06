@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,8 +12,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
@@ -23,16 +25,19 @@ import com.google.android.gms.location.Priority
 import com.japygo.runningtracker.presentation.home.HomeRoot
 import com.japygo.runningtracker.ui.theme.RunningTrackerTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private lateinit var snackbarHostState: SnackbarHostState
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { permissions ->
         val allGranted = permissions.values.all { it }
         if (!allGranted) {
-            Toast.makeText(this, "권한이 허용되지 않았습니다", Toast.LENGTH_SHORT).show()
+            showSnackbar("권한이 허용되지 않았습니다")
         } else {
             checkGpsSettings()
         }
@@ -41,10 +46,8 @@ class MainActivity : ComponentActivity() {
     private val locationSettingsLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
     ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            Toast.makeText(this, "GPS가 활성화되었습니다", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(this, "GPS를 켜주세요", Toast.LENGTH_SHORT).show()
+        if (result.resultCode != RESULT_OK) {
+            showSnackbar("GPS를 켜주세요")
         }
     }
 
@@ -56,7 +59,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             RunningTrackerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    snackbarHost = { SnackbarHost(snackbarHostState) },
+                ) { innerPadding ->
                     HomeRoot(modifier = Modifier.padding(innerPadding))
                 }
             }
@@ -105,13 +111,15 @@ class MainActivity : ComponentActivity() {
                     ).build()
                     locationSettingsLauncher.launch(intentSenderRequest)
                 } catch (_: IntentSender.SendIntentException) {
-                    Toast.makeText(
-                        this,
-                        "GPS 설정을 열 수 없습니다",
-                        Toast.LENGTH_SHORT,
-                    ).show()
+                    showSnackbar("GPS 설정을 열 수 없습니다")
                 }
             }
+        }
+    }
+
+    private fun showSnackbar(message: String) {
+        lifecycleScope.launch {
+            snackbarHostState.showSnackbar(message)
         }
     }
 }
