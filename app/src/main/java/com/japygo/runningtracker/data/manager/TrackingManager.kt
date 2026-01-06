@@ -1,4 +1,4 @@
-package com.japygo.runningtracker.data.service
+package com.japygo.runningtracker.data.manager
 
 import android.Manifest
 import android.content.Context
@@ -11,7 +11,6 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import com.google.android.gms.maps.model.LatLng
 import com.japygo.runningtracker.domain.model.TrackingState
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +37,10 @@ class TrackingManager @Inject constructor(
         if (isTracking) return
         isTracking = true
 
-        _state.value = TrackingState(startTime = System.currentTimeMillis())
+        _state.value = TrackingState(
+            startTime = System.currentTimeMillis(),
+            isStarted = true,
+        )
         lastLocation = null
 
         requestLocationUpdates()
@@ -48,12 +50,26 @@ class TrackingManager @Inject constructor(
         if (!isTracking) return
         isTracking = false
 
+        _state.update {
+            it.copy(
+                isStarted = false,
+                isPaused = true,
+            )
+        }
+
         removeLocationUpdates()
     }
 
     fun resumeTracking() {
         if (isTracking) return
         isTracking = true
+
+        _state.update {
+            it.copy(
+                isStarted = true,
+                isPaused = false,
+            )
+        }
 
         requestLocationUpdates()
     }
@@ -64,10 +80,31 @@ class TrackingManager @Inject constructor(
 
         removeLocationUpdates()
 
-        _state.update { it.copy(endTime = System.currentTimeMillis()) }
+        _state.update {
+            it.copy(
+                endTime = System.currentTimeMillis(),
+            )
+        }
 
         _state.value = TrackingState()
         lastLocation = null
+    }
+
+    fun restoreState(savedState: TrackingState) {
+        _state.value = savedState
+
+        if (savedState.pathPoints.isNotEmpty()) {
+            val last = savedState.pathPoints.last()
+            lastLocation = Location("").apply {
+                latitude = last.first
+                longitude = last.second
+            }
+        }
+
+        if (savedState.isStarted) {
+            isTracking = true
+            requestLocationUpdates()
+        }
     }
 
     private fun requestLocationUpdates() {
@@ -99,8 +136,6 @@ class TrackingManager @Inject constructor(
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             result.locations.forEach { location ->
-                val newLatLng = LatLng(location.latitude, location.longitude)
-
                 _state.update {
                     var distance = it.distance
                     lastLocation?.let { prevLoc ->
@@ -108,10 +143,12 @@ class TrackingManager @Inject constructor(
                     }
                     lastLocation = location
 
-                    it.copy(
-                        pathPoints = it.pathPoints + newLatLng,
+                    val newState = it.copy(
+                        pathPoints = it.pathPoints + Pair(location.latitude, location.longitude),
                         distance = distance,
                     )
+
+                    newState
                 }
             }
         }

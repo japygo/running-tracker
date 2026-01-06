@@ -3,25 +3,46 @@ package com.japygo.runningtracker.data.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.Service
 import android.content.Intent
-import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.lifecycleScope
+import com.japygo.runningtracker.data.manager.TrackingManager
+import com.japygo.runningtracker.domain.repository.TrackingRepository
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class TrackingService : Service() {
+class TrackingService : LifecycleService() {
 
     @Inject
     lateinit var trackingManager: TrackingManager
 
+    @Inject
+    lateinit var trackingRepository: TrackingRepository
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+
+        lifecycleScope.launch {
+            val savedState = trackingRepository.getTrackingState()
+            if (savedState != null) {
+                trackingManager.restoreState(savedState)
+            }
+        }
+
+        lifecycleScope.launch {
+            trackingManager.state
+                .drop(1)
+                .collect { trackingRepository.saveTrackingState(it) }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
             ACTION_START -> startTracking()
             ACTION_PAUSE -> pauseTracking()
@@ -29,10 +50,6 @@ class TrackingService : Service() {
             ACTION_STOP -> stopTracking()
         }
         return START_STICKY
-    }
-
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
     }
 
     private fun createNotificationChannel() {
@@ -67,6 +84,9 @@ class TrackingService : Service() {
     }
 
     private fun stopTracking() {
+        lifecycleScope.launch {
+            trackingRepository.clearTrackingState()
+        }
         trackingManager.stopTracking()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()

@@ -4,9 +4,8 @@ import com.japygo.runningtracker.domain.model.TrackingState
 import kotlinx.coroutines.flow.Flow
 
 interface TrackingRepository {
-    suspend fun startTracking()
-    suspend fun pauseTracking()
-    suspend fun resumeTracking()
-    suspend fun stopTracking()
     fun observeTrackingState(): Flow<TrackingState>
+    suspend fun saveTrackingState(state: TrackingState)
+    suspend fun getTrackingState(): TrackingState?
+    suspend fun clearTrackingState()
 }

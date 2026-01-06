@@ -84,8 +84,8 @@ class HomeViewModel @Inject constructor(
 
     private fun stop() {
         viewModelScope.launch {
-            stopTrackingUseCase()
             saveRunningSessionUseCase(RunningSession())
+            stopTrackingUseCase()
         }
         _uiState.update {
             uiState.value.copy(

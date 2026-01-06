@@ -1,12 +1,12 @@
 package com.japygo.runningtracker.domain.usecase
 
-import com.japygo.runningtracker.domain.repository.TrackingRepository
+import com.japygo.runningtracker.domain.controller.TrackingServiceController
 import javax.inject.Inject
 
 class StartTrackingUseCase @Inject constructor(
-    private val repository: TrackingRepository,
+    private val controller: TrackingServiceController,
 ) {
-    suspend operator fun invoke() {
-        repository.startTracking()
+    operator fun invoke() {
+        controller.startTracking()
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Polyline
 
@@ -30,7 +31,7 @@ fun HomeScreen(
             modifier = modifier.fillMaxSize(),
         ) {
             Polyline(
-                points = uiState.pathPoints,
+                points = uiState.pathPoints.map { LatLng(it.first, it.second) },
                 width = 10f,
                 visible = uiState.pathPoints.isNotEmpty(),
             )
