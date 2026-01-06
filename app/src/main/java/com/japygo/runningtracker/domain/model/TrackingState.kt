@@ -12,4 +12,5 @@ data class TrackingState(
     val isStarted: Boolean = false,
     val isPaused: Boolean = false,
     val currentLocation: Pair<Double, Double>? = null,
+    val isGpsAvailable: Boolean = true,
 )

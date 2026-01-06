@@ -39,6 +39,7 @@ class HomeViewModel @Inject constructor(
                         pathPoints = state.pathPoints,
                         startTime = state.startTime,
                         currentLocation = state.currentLocation,
+                        isGpsAvailable = state.isGpsAvailable,
                     )
                 }
             }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -30,7 +31,7 @@ import kotlinx.coroutines.launch
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private lateinit var snackbarHostState: SnackbarHostState
+    private var snackbarHostState: SnackbarHostState? = null
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -58,10 +59,13 @@ class MainActivity : ComponentActivity() {
         checkAndRequestPermissions()
 
         setContent {
+            val hostState = remember { SnackbarHostState() }
+            snackbarHostState = hostState
+
             RunningTrackerTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    snackbarHost = { SnackbarHost(snackbarHostState) },
+                    snackbarHost = { SnackbarHost(hostState) },
                 ) { innerPadding ->
                     HomeRoot(modifier = Modifier.padding(innerPadding))
                 }
@@ -118,8 +122,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun showSnackbar(message: String) {
-        lifecycleScope.launch {
-            snackbarHostState.showSnackbar(message)
+        snackbarHostState?.let { hostState ->
+            lifecycleScope.launch {
+                hostState.showSnackbar(message)
+            }
         }
     }
 }

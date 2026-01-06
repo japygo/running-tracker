@@ -8,4 +8,5 @@ data class HomeUiState(
     val pathPoints: List<Pair<Double, Double>> = emptyList(),
     val startTime: Long = 0,
     val currentLocation: Pair<Double, Double>? = null,
+    val isGpsAvailable: Boolean = true,
 )

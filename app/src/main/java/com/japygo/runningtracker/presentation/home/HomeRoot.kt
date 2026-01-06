@@ -17,9 +17,7 @@ fun HomeRoot(
     val currentView = LocalView.current
 
     DisposableEffect(uiState.isStarted) {
-        if (uiState.isStarted) {
-            currentView.keepScreenOn = true
-        }
+        currentView.keepScreenOn = uiState.isStarted
         onDispose {
             currentView.keepScreenOn = false
         }

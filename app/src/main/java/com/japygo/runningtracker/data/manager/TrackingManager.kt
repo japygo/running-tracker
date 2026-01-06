@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
+import android.location.LocationManager
 import android.os.Looper
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.LocationCallback
@@ -27,6 +28,10 @@ class TrackingManager @Inject constructor(
         LocationServices.getFusedLocationProviderClient(context)
     }
 
+    private val locationManager by lazy {
+        context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    }
+
     private val _state = MutableStateFlow(TrackingState())
     val state = _state.asStateFlow()
 
@@ -35,6 +40,7 @@ class TrackingManager @Inject constructor(
 
     init {
         requestLocationUpdates()
+        checkGpsAvailability()
     }
 
     fun startTracking() {
@@ -44,6 +50,7 @@ class TrackingManager @Inject constructor(
         _state.value = TrackingState(
             startTime = System.currentTimeMillis(),
             isStarted = true,
+            isGpsAvailable = checkGpsAvailability(),
         )
         lastLocation = null
     }
@@ -103,6 +110,19 @@ class TrackingManager @Inject constructor(
         }
     }
 
+    private fun checkGpsAvailability(): Boolean {
+        val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        
+        val isAvailable = isGpsEnabled || isNetworkEnabled
+        
+        _state.update {
+            it.copy(isGpsAvailable = isAvailable)
+        }
+        
+        return isAvailable
+    }
+
     private fun requestLocationUpdates() {
         if (ActivityCompat.checkSelfPermission(
                 context,
@@ -127,6 +147,8 @@ class TrackingManager @Inject constructor(
 
     private inner class TrackingLocationCallback : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
+            checkGpsAvailability()
+            
             result.locations.forEach { location ->
                 updateCurrentLocation(location)
 
