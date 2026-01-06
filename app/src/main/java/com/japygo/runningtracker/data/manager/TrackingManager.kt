@@ -33,6 +33,10 @@ class TrackingManager @Inject constructor(
     private var isTracking = false
     private var lastLocation: Location? = null
 
+    init {
+        requestLocationUpdates()
+    }
+
     fun startTracking() {
         if (isTracking) return
         isTracking = true
@@ -42,8 +46,6 @@ class TrackingManager @Inject constructor(
             isStarted = true,
         )
         lastLocation = null
-
-        requestLocationUpdates()
     }
 
     fun pauseTracking() {
@@ -56,8 +58,6 @@ class TrackingManager @Inject constructor(
                 isPaused = true,
             )
         }
-
-        removeLocationUpdates()
     }
 
     fun resumeTracking() {
@@ -70,15 +70,11 @@ class TrackingManager @Inject constructor(
                 isPaused = false,
             )
         }
-
-        requestLocationUpdates()
     }
 
     fun stopTracking() {
         if (!isTracking && _state.value.distance == 0.0) return
         isTracking = false
-
-        removeLocationUpdates()
 
         _state.update {
             it.copy(
@@ -124,32 +120,40 @@ class TrackingManager @Inject constructor(
 
         fusedLocationClient.requestLocationUpdates(
             request,
-            locationCallback,
+            TrackingLocationCallback(),
             Looper.getMainLooper(),
         )
     }
 
-    private fun removeLocationUpdates() {
-        fusedLocationClient.removeLocationUpdates(locationCallback)
-    }
-
-    private val locationCallback = object : LocationCallback() {
+    private inner class TrackingLocationCallback : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             result.locations.forEach { location ->
-                _state.update {
-                    var distance = it.distance
-                    lastLocation?.let { prevLoc ->
-                        distance += prevLoc.distanceTo(location).toDouble()
-                    }
-                    lastLocation = location
+                updateCurrentLocation(location)
 
-                    val newState = it.copy(
-                        pathPoints = it.pathPoints + Pair(location.latitude, location.longitude),
-                        distance = distance,
-                    )
-
-                    newState
+                if (isTracking) {
+                    recordLocation(location)
                 }
+            }
+        }
+
+        private fun updateCurrentLocation(location: Location) {
+            _state.update {
+                it.copy(currentLocation = Pair(location.latitude, location.longitude))
+            }
+        }
+
+        private fun recordLocation(location: Location) {
+            _state.update {
+                var distance = it.distance
+                lastLocation?.let { prevLoc ->
+                    distance += prevLoc.distanceTo(location).toDouble()
+                }
+                lastLocation = location
+
+                it.copy(
+                    pathPoints = it.pathPoints + Pair(location.latitude, location.longitude),
+                    distance = distance,
+                )
             }
         }
     }

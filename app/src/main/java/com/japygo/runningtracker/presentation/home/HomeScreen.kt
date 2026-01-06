@@ -12,13 +12,22 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Polyline
+import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
 fun HomeScreen(
@@ -26,9 +35,35 @@ fun HomeScreen(
     uiState: HomeUiState = HomeUiState(),
     onAction: (HomeAction) -> Unit = {},
 ) {
-    Box {
+    val cameraPositionState = rememberCameraPositionState()
+    var hasMoved by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.currentLocation) {
+        if (!hasMoved) {
+            uiState.currentLocation?.let {
+                cameraPositionState.animate(
+                    update = CameraUpdateFactory.newLatLngZoom(
+                        LatLng(it.first, it.second),
+                        15f,
+                    ),
+                    durationMs = 1000,
+                )
+                hasMoved = true
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier.fillMaxSize(),
+    ) {
         GoogleMap(
-            modifier = modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            properties = MapProperties(
+                isMyLocationEnabled = true,
+            ),
+            uiSettings = MapUiSettings(
+                myLocationButtonEnabled = true,
+            ),
         ) {
             Polyline(
                 points = uiState.pathPoints.map { LatLng(it.first, it.second) },
@@ -46,7 +81,7 @@ fun HomeScreen(
         }
         Row(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
+                .align(Alignment.BottomStart)
                 .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {

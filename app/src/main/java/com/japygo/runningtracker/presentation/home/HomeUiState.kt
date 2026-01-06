@@ -7,4 +7,5 @@ data class HomeUiState(
     val duration: Long = 0L,
     val pathPoints: List<Pair<Double, Double>> = emptyList(),
     val startTime: Long = 0,
+    val currentLocation: Pair<Double, Double>? = null,
 )

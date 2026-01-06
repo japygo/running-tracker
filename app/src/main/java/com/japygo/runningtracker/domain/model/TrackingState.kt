@@ -11,4 +11,5 @@ data class TrackingState(
     val pathPoints: List<Pair<Double, Double>> = emptyList(),
     val isStarted: Boolean = false,
     val isPaused: Boolean = false,
+    val currentLocation: Pair<Double, Double>? = null,
 )

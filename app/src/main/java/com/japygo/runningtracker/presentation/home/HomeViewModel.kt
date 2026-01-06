@@ -38,6 +38,7 @@ class HomeViewModel @Inject constructor(
                         duration = state.duration,
                         pathPoints = state.pathPoints,
                         startTime = state.startTime,
+                        currentLocation = state.currentLocation,
                     )
                 }
             }
