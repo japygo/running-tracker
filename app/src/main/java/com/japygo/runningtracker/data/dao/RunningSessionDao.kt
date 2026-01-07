@@ -12,6 +12,6 @@ interface RunningSessionDao {
     @Insert
     suspend fun insert(runningSessionEntity: RunningSessionEntity)
 
-    @Query("SELECT * FROM running_session")
+    @Query("SELECT * FROM running_session ORDER BY start_time DESC")
     fun findAll(): Flow<List<RunningSessionEntity>>
 }

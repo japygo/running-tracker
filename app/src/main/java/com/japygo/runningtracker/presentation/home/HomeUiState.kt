@@ -14,4 +14,5 @@ data class HomeUiState(
     val isGpsAvailable: Boolean = true,
     val batteryStatus: BatteryState.Status = BatteryState.Status.OK,
     val runningSessions: List<RunningSession> = emptyList(),
+    val hasLocationPermission: Boolean = false,
 )

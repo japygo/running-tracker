@@ -69,8 +69,8 @@ fun HomeScreen(
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            properties = MapProperties(isMyLocationEnabled = true),
-            uiSettings = MapUiSettings(myLocationButtonEnabled = true),
+            properties = MapProperties(isMyLocationEnabled = uiState.hasLocationPermission),
+            uiSettings = MapUiSettings(myLocationButtonEnabled = uiState.hasLocationPermission),
         ) {
             Polyline(
                 points = uiState.pathPoints.map { LatLng(it.first, it.second) },
@@ -105,7 +105,8 @@ fun HomeScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(8.dp),
+                                .padding(8.dp)
+                                .animateItem(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Text(text = "🏃 ${String.format("%.2f", session.distance / 1000.0)}km")

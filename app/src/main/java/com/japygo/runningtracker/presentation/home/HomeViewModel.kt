@@ -60,11 +60,17 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            getRunningSessionsUseCase().collect { sessions ->
-                _uiState.update {
-                    it.copy(runningSessions = sessions)
+            getRunningSessionsUseCase()
+                .distinctUntilChanged()
+                .collect { sessions ->
+                    android.util.Log.d("HomeViewModel", "Sessions collected: ${sessions.size} items")
+                    sessions.forEach { 
+                        android.util.Log.d("HomeViewModel", "Session id=${it.id}, startTime=${it.startTime}, distance=${it.distance}")
+                    }
+                    _uiState.update {
+                        it.copy(runningSessions = sessions)
+                    }
                 }
-            }
         }
 
         viewModelScope.launch {
@@ -92,6 +98,7 @@ class HomeViewModel @Inject constructor(
             HomeAction.OnPause -> pause()
             HomeAction.OnResume -> resume()
             HomeAction.OnStop -> stop()
+            is HomeAction.UpdateLocationPermission -> updateLocationPermission(action.hasPermission)
         }
     }
 
@@ -155,6 +162,12 @@ class HomeViewModel @Inject constructor(
     private fun updateBatteryStatus(batteryStatus: BatteryState.Status) {
         _uiState.update {
             it.copy(batteryStatus = batteryStatus)
+        }
+    }
+
+    private fun updateLocationPermission(hasPermission: Boolean) {
+        _uiState.update {
+            it.copy(hasLocationPermission = hasPermission)
         }
     }
 
