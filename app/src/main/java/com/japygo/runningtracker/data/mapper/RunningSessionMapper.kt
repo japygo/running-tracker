@@ -10,6 +10,7 @@ fun RunningSession.toEntity(): RunningSessionEntity {
     val pathPointsJson = json.encodeToString(pathPoints)
 
     return RunningSessionEntity(
+        id = id,
         startTime = startTime,
         endTime = endTime,
         distance = distance,
@@ -30,6 +31,7 @@ fun RunningSessionEntity.toDomain(): RunningSession {
     }
 
     return RunningSession(
+        id = id,
         startTime = startTime,
         endTime = endTime,
         distance = distance,

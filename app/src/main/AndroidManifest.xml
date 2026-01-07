@@ -32,6 +32,14 @@
             android:foregroundServiceType="location"
             android:exported="false" />
 
+        <receiver
+            android:name=".data.receiver.BatteryStateReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BATTERY_CHANGED" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

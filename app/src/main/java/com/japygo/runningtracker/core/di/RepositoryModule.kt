@@ -1,7 +1,9 @@
 package com.japygo.runningtracker.core.di
 
+import com.japygo.runningtracker.data.repository.BatteryRepositoryImpl
 import com.japygo.runningtracker.data.repository.RunningSessionRepositoryImpl
 import com.japygo.runningtracker.data.repository.TrackingRepositoryImpl
+import com.japygo.runningtracker.domain.repository.BatteryRepository
 import com.japygo.runningtracker.domain.repository.RunningSessionRepository
 import com.japygo.runningtracker.domain.repository.TrackingRepository
 import dagger.Binds
@@ -25,4 +27,10 @@ interface RepositoryModule {
     fun provideRunningSessionRepository(
         impl: RunningSessionRepositoryImpl,
     ): RunningSessionRepository
+
+    @Binds
+    @Singleton
+    fun bindBatteryRepository(
+        impl: BatteryRepositoryImpl,
+    ): BatteryRepository
 }
