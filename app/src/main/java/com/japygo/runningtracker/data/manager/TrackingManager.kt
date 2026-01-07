@@ -37,8 +37,12 @@ class TrackingManager @Inject constructor(
 
     private var isTracking = false
     private var lastLocation: Location? = null
+    
+    // 콜백 인스턴스를 멤버 변수로 유지 (중요!)
+    private val locationCallback = TrackingLocationCallback()
 
     init {
+        // 앱 시작 시 위치 요청 (지도 표시용)
         requestLocationUpdates()
         checkGpsAvailability()
     }
@@ -53,6 +57,9 @@ class TrackingManager @Inject constructor(
             isGpsAvailable = checkGpsAvailability(),
         )
         lastLocation = null
+        
+        // 확실하게 업데이트 다시 요청 (혹시 멈췄을 경우 대비)
+        requestLocationUpdates()
     }
 
     fun pauseTracking() {
@@ -82,6 +89,9 @@ class TrackingManager @Inject constructor(
     fun stopTracking() {
         if (!isTracking && _state.value.distance == 0.0) return
         isTracking = false
+        
+        // 위치 업데이트 중지 (배터리 절약 및 좀비 콜백 방지)
+        stopLocationUpdates()
 
         _state.update {
             it.copy(
@@ -135,14 +145,21 @@ class TrackingManager @Inject constructor(
         ) {
             return
         }
+        
+        // 중복 요청 방지를 위해 먼저 제거
+        fusedLocationClient.removeLocationUpdates(locationCallback)
 
         val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L).build()
 
         fusedLocationClient.requestLocationUpdates(
             request,
-            TrackingLocationCallback(),
+            locationCallback, // 멤버 변수 사용
             Looper.getMainLooper(),
         )
+    }
+
+    private fun stopLocationUpdates() {
+        fusedLocationClient.removeLocationUpdates(locationCallback) // 멤버 변수 사용
     }
 
     private inner class TrackingLocationCallback : LocationCallback() {

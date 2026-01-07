@@ -25,14 +25,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.Priority
-import com.japygo.runningtracker.data.receiver.BatteryStateReceiver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -46,7 +44,6 @@ fun HomeRoot(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentView = LocalView.current
     val context = LocalContext.current
-    val batteryStateReceiver = remember { BatteryStateReceiver() }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -94,16 +91,6 @@ fun HomeRoot(
         onDispose {
             currentView.keepScreenOn = false
         }
-    }
-
-    LifecycleStartEffect(true) {
-        ContextCompat.registerReceiver(
-            context,
-            batteryStateReceiver,
-            IntentFilter(Intent.ACTION_BATTERY_CHANGED),
-            ContextCompat.RECEIVER_NOT_EXPORTED,
-        )
-        onStopOrDispose { context.unregisterReceiver(batteryStateReceiver) }
     }
 
     LaunchedEffect(viewModel.event) {
