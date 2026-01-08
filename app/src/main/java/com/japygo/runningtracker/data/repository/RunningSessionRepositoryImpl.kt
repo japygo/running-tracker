@@ -5,6 +5,8 @@ import com.japygo.runningtracker.data.mapper.toDomain
 import com.japygo.runningtracker.data.mapper.toEntity
 import com.japygo.runningtracker.domain.model.RunningSession
 import com.japygo.runningtracker.domain.repository.RunningSessionRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class RunningSessionRepositoryImpl @Inject constructor(
@@ -15,7 +17,7 @@ class RunningSessionRepositoryImpl @Inject constructor(
         dao.insert(runningSession.toEntity())
     }
 
-    override suspend fun findAll(): List<RunningSession> {
-        return dao.findAll().map { it.toDomain() }
+    override fun findAll(): Flow<List<RunningSession>> {
+        return dao.findAll().map { list -> list.map { it.toDomain() } }
     }
 }

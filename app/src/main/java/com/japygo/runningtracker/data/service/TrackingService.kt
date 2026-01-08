@@ -3,11 +3,19 @@ package com.japygo.runningtracker.data.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.ServiceInfo
+import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.japygo.runningtracker.data.manager.TrackingManager
+import com.japygo.runningtracker.data.receiver.BatteryStateReceiver
 import com.japygo.runningtracker.domain.repository.TrackingRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.drop
@@ -22,6 +30,17 @@ class TrackingService : LifecycleService() {
 
     @Inject
     lateinit var trackingRepository: TrackingRepository
+
+    @Inject
+    lateinit var batteryStateHelper: BatteryStateReceiver
+
+    private var isReceiverRegistered = false
+
+    private val batteryBroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            batteryStateHelper.onReceive(intent)
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -52,6 +71,34 @@ class TrackingService : LifecycleService() {
         return START_STICKY
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterBatteryReceiver()
+    }
+
+    private fun registerBatteryReceiver() {
+        if (!isReceiverRegistered) {
+            ContextCompat.registerReceiver(
+                this,
+                batteryBroadcastReceiver,
+                IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+            isReceiverRegistered = true
+        }
+    }
+
+    private fun unregisterBatteryReceiver() {
+        if (isReceiverRegistered) {
+            try {
+                unregisterReceiver(batteryBroadcastReceiver)
+                isReceiverRegistered = false
+            } catch (e: IllegalArgumentException) {
+                // Receiver not registered
+            }
+        }
+    }
+
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
@@ -71,7 +118,22 @@ class TrackingService : LifecycleService() {
     }
 
     private fun startTracking() {
-        startForeground(NOTIFICATION_ID, createNotification())
+        val notification = createNotification()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ServiceCompat.startForeground(
+                this,
+                NOTIFICATION_ID,
+                notification,
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                } else {
+                    0
+                },
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+        registerBatteryReceiver() // 여기서 등록
         trackingManager.startTracking()
     }
 
@@ -84,6 +146,7 @@ class TrackingService : LifecycleService() {
     }
 
     private fun stopTracking() {
+        unregisterBatteryReceiver() // 여기서 해제
         lifecycleScope.launch {
             trackingRepository.clearTrackingState()
         }

@@ -3,9 +3,14 @@ package com.japygo.runningtracker.presentation.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -62,13 +67,10 @@ fun HomeScreen(
         modifier = modifier.fillMaxSize(),
     ) {
         GoogleMap(
+            modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            properties = MapProperties(
-                isMyLocationEnabled = true,
-            ),
-            uiSettings = MapUiSettings(
-                myLocationButtonEnabled = true,
-            ),
+            properties = MapProperties(isMyLocationEnabled = uiState.hasLocationPermission),
+            uiSettings = MapUiSettings(myLocationButtonEnabled = uiState.hasLocationPermission),
         ) {
             Polyline(
                 points = uiState.pathPoints.map { LatLng(it.first, it.second) },
@@ -77,54 +79,83 @@ fun HomeScreen(
             )
         }
 
-        if (!uiState.isGpsAvailable && uiState.isStarted) {
-            Text(
-                text = "⚠️ GPS 연결이 끊겼습니다",
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 16.dp)
-                    .background(
-                        Color.Red.copy(alpha = 0.8f),
-                        shape = RoundedCornerShape(8.dp),
-                    )
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                color = Color.White,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-
-        val icon = if (uiState.isStarted) {
-            Icons.Filled.Pause
-        } else if (uiState.isPaused) {
-            Icons.Filled.PlayArrow
-        } else {
-            Icons.Filled.PlayArrow
-        }
-        Row(
+        Column(
             modifier = Modifier
-                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            FloatingActionButton(
-                onClick = {
-                    if (uiState.isStarted) {
-                        onAction(HomeAction.OnPause)
-                    } else if (uiState.isPaused) {
-                        onAction(HomeAction.OnResume)
-                    } else {
-                        onAction(HomeAction.OnStart)
+            if (uiState.runningSessions.isNotEmpty()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                            shape = RoundedCornerShape(16.dp),
+                        )
+                        .padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(
+                        items = uiState.runningSessions,
+                        key = { it.id },
+                    ) { session ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                                .animateItem(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(text = "🏃 ${String.format("%.2f", session.distance / 1000.0)}km")
+                            Text(text = "⏱️ ${session.duration / 1000}초")
+                        }
                     }
-                },
-            ) {
-                Icon(icon, "Start Button")
+                }
             }
-            FloatingActionButton(
-                onClick = {
-                    onAction(HomeAction.OnStop)
-                },
+
+            if (!uiState.isGpsAvailable && uiState.isStarted) {
+                Text(
+                    text = "⚠️ GPS 연결이 끊겼습니다",
+                    modifier = Modifier
+                        .padding(top = 16.dp)
+                        .background(
+                            Color.Red.copy(alpha = 0.8f),
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.Start),
             ) {
-                Icon(Icons.Filled.Stop, "Stop Button")
+                val icon = if (uiState.isStarted) Icons.Filled.Pause else Icons.Filled.PlayArrow
+
+                FloatingActionButton(
+                    onClick = {
+                        when {
+                            uiState.isStarted -> onAction(HomeAction.OnPause)
+                            uiState.isPaused -> onAction(HomeAction.OnResume)
+                            else -> onAction(HomeAction.OnStart)
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                ) {
+                    Icon(icon, contentDescription = "Start/Pause")
+                }
+
+                FloatingActionButton(
+                    onClick = { onAction(HomeAction.OnStop) },
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                ) {
+                    Icon(Icons.Filled.Stop, contentDescription = "Stop")
+                }
             }
         }
     }

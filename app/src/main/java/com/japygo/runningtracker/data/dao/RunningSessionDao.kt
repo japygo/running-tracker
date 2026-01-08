@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import com.japygo.runningtracker.data.entity.RunningSessionEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface RunningSessionDao {
@@ -11,6 +12,6 @@ interface RunningSessionDao {
     @Insert
     suspend fun insert(runningSessionEntity: RunningSessionEntity)
 
-    @Query("SELECT * FROM running_session")
-    suspend fun findAll(): List<RunningSessionEntity>
+    @Query("SELECT * FROM running_session ORDER BY start_time DESC")
+    fun findAll(): Flow<List<RunningSessionEntity>>
 }

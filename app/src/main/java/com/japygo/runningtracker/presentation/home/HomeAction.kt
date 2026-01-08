@@ -5,4 +5,5 @@ sealed interface HomeAction {
     data object OnPause : HomeAction
     data object OnResume : HomeAction
     data object OnStop : HomeAction
+    data class UpdateLocationPermission(val hasPermission: Boolean) : HomeAction
 }
